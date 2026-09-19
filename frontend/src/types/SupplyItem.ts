@@ -4,7 +4,7 @@ export interface SupplyItem {
   name: string;
   category: string;
   unit: string;
-  safety_stock: string;
+  safety_stock: number;
   expire_days: number;
   storage_requirement: string;
 }

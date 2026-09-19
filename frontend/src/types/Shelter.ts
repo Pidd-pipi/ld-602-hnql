@@ -3,7 +3,7 @@ export interface Shelter {
   name: string;
   district: string;
   capacity: number;
-  current_population: string;
+  current_population: number;
   contact_person: string;
   risk_level: string;
   open_status: string;

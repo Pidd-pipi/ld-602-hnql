@@ -1,16 +1,40 @@
 import type { InventoryBatch } from "../types/InventoryBatch";
 
 export const createDefaultInventoryBatch = (overrides: Partial<InventoryBatch> = {}): InventoryBatch => ({
-  id: 1 as never,
-  warehouse_id: 1 as never,
-  supply_item_id: 1 as never,
-  batch_no: "batch no 1" as never,
-  quantity: 92 as never,
-  expire_at: "2026-06-11T09:00:00Z" as never,
-  inbound_source: "inbound source 1" as never,
-  quality_status: "SUBMITTED" as never,
+  id: 0,
+  warehouse_id: 0,
+  warehouse_name: "",
+  supply_item_id: 0,
+  item_name: "",
+  unit: "",
+  batch_no: "",
+  quantity: 0,
+  expire_at: "",
+  inbound_source: "",
+  quality_status: "PENDING_QC",
+  bucket: "FROZEN",
+  dispatchable: false,
   ...overrides
 });
 
-export const createInventoryBatchForm = createDefaultInventoryBatch;
+export interface InboundFormState {
+  warehouseId: number | null;
+  supplyItemId: number | null;
+  batchNo: string;
+  quantity: number;
+  expireAt: string;
+  inboundSource: string;
+}
+
+/** 入库表单默认值：新批次一律待检入库，质检合格后才可拨。 */
+export const createInboundForm = (overrides: Partial<InboundFormState> = {}): InboundFormState => ({
+  warehouseId: null,
+  supplyItemId: null,
+  batchNo: "",
+  quantity: 1,
+  expireAt: "",
+  inboundSource: "手工入库",
+  ...overrides
+});
+
 export const createInventoryBatchResponse = createDefaultInventoryBatch;

@@ -1,21 +1,13 @@
 import { mockData } from "../mocks/seedData";
+import { get } from "../utils/request";
 import type { Shelter } from "../types/Shelter";
 
 const endpoint = "/api/shelter";
 
 export async function listShelter(): Promise<Shelter[]> {
-  if (typeof fetch !== "undefined" && endpoint.startsWith("/api") && true) {
-    try {
-      const res = await fetch(endpoint);
-      if (res.ok) return await res.json();
-    } catch {
-      // Local mock fallback keeps the UI available during offline review.
-    }
+  try {
+    return await get<Shelter[]>(endpoint);
+  } catch {
+    return [...(mockData.shelter as unknown as Shelter[])];
   }
-  return [...(mockData.shelter as unknown as Shelter[])];
-}
-
-export async function saveShelter(payload: Shelter) {
-  console.info("save Shelter", payload);
-  return payload;
 }
