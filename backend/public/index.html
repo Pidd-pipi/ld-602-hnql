@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>临期物资管控 · 库存页</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>临期物资管控闭环 · 库存页</h1>
+      <p class="muted">可用 / 临期 / 冻结 三类数量与最近放行记录 · 数据由服务端持久化，刷新后一致</p>
+    </div>
+    <div class="topbar-actions">
+      <label>当前角色
+        <select id="roleSelect">
+          <option value="viewer">只读观察员</option>
+          <option value="approver">审批员</option>
+          <option value="admin">管理员</option>
+        </select>
+      </label>
+      <label class="auto-refresh"><input type="checkbox" id="autoRefresh" checked /> 5s 自动刷新</label>
+      <button id="refreshBtn" class="primary">刷新</button>
+    </div>
+  </header>
+
+  <main>
+    <section id="summaryCards" class="cards"></section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>仓库库存（三类数量）</h2>
+        <label>仓库
+          <select id="warehouseSelect"><option value="">全部仓库</option></select>
+        </label>
+      </div>
+      <div id="inventoryTables"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><h2>最近放行记录</h2></div>
+      <table id="releaseTable">
+        <thead>
+          <tr><th>时间</th><th>单号</th><th>类型</th><th>物资</th><th>批次</th><th>数量</th><th>放行/审批人</th><th>原因</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <p id="releaseEmpty" class="muted hidden">暂无放行记录</p>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><h2>待审批应急调拨</h2></div>
+      <table id="pendingTable">
+        <thead>
+          <tr><th>单号</th><th>仓库</th><th>申请人</th><th>明细</th><th>提交时间</th><th>操作</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <p id="pendingEmpty" class="muted hidden">暂无待审批应急单</p>
+    </section>
+
+    <section class="panel forms">
+      <div class="form-block">
+        <h3>批次入库</h3>
+        <form id="inboundForm">
+          <label>仓库 <select name="warehouse_id" required></select></label>
+          <label>物资 <select name="supply_item_id" required></select></label>
+          <label>批次号 <input name="batch_no" required placeholder="B2026-001" /></label>
+          <label>数量 <input name="quantity" type="number" min="1" required /></label>
+          <label>到期日 <input name="expire_at" type="date" required /></label>
+          <label>质检状态
+            <select name="quality_status">
+              <option value="PASSED">合格</option>
+              <option value="PENDING_QC">待检</option>
+              <option value="REJECTED">不合格</option>
+            </select>
+          </label>
+          <label>来源 <input name="inbound_source" placeholder="集中采购" /></label>
+          <button type="submit" class="primary">入库</button>
+        </form>
+      </div>
+      <div class="form-block">
+        <h3>普通调拨申领</h3>
+        <form id="claimForm">
+          <label>仓库 <select name="warehouse_id" required></select></label>
+          <label>安置点 <select name="shelter_id" required></select></label>
+          <label>批次 <select name="batch_id" required></select></label>
+          <label>数量 <input name="quantity" type="number" min="1" required /></label>
+          <label>申请人 <input name="requested_by" required placeholder="张三" /></label>
+          <button type="submit" class="primary">申领</button>
+        </form>
+      </div>
+      <div class="form-block">
+        <h3>应急调拨登记</h3>
+        <form id="emergencyForm">
+          <label>仓库 <select name="warehouse_id" required></select></label>
+          <label>安置点 <select name="shelter_id" required></select></label>
+          <label>批次 <select name="batch_id" required></select></label>
+          <label>数量 <input name="quantity" type="number" min="1" required /></label>
+          <label>申请人 <input name="requested_by" required placeholder="李四" /></label>
+          <button type="submit" class="warn">提交应急单</button>
+        </form>
+      </div>
+    </section>
+
+    <div id="toast" class="toast hidden"></div>
+    <footer class="muted">最后刷新：<span id="lastRefresh">—</span></footer>
+  </main>
+
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

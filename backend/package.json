@@ -1,0 +1,15 @@
+{
+  "name": "rescue-stock-backend",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "临期物资管控闭环：批次入库分区 / 可调拨量 / 调拨审批 / 并发申领 / 库存页",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test": "node --test test/"
+  }
+}

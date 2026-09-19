@@ -2,6 +2,66 @@
 
 面向街道、社区和应急仓库的防灾物资储备与调拨平台，覆盖物资库存、避难点、事件响应和调拨审批。
 
+## 临期物资管控闭环（当前已实现的可运行切片）
+
+闭环后端位于 `backend/src`（Node.js ≥ 20，零外部依赖，开箱即跑），库存页由后端直接托管。
+
+```bash
+# 启动（默认端口 21102，首次启动自动写入种子数据）
+node backend/src/index.js
+# 或
+npm --prefix backend start
+
+# 运行业务闭环测试（6 个用例覆盖全部规则）
+npm --prefix backend test
+```
+
+- 库存页：<http://localhost:21102/>（三类数量 + 最近放行记录 + 入库/申领/应急放行操作台，5s 自动刷新）
+- 健康检查：<http://localhost:21102/health>
+
+### 闭环规则
+
+1. **批次入库分区**：入库后按到期日与质检状态派生分区——`可用`（合格未临期）、`临期`（合格且距到期 ≤ `NEAR_EXPIRY_DAYS`，默认 30 天）、`冻结`（待检 / 不合格 / 已过期）。
+2. **可调拨量**：仅 `可用 + 临期`；待检、不合格、已过期数量一律不进入可调拨量，冻结批次申领返回 `BATCH_NOT_TRANSFERABLE`。
+3. **普通调拨**：`POST /api/dispatch/claim`，调拨后任一物资可调拨量低于其安全库存 → 整单拒绝（`SAFETY_STOCK_VIOLATION`，库存不变、不产生放行记录）。
+4. **应急调拨**：`POST /api/dispatch/emergency` 登记（不动库存）→ 审批员携带原因 `POST /api/dispatch/:id/release` 放行（请求头 `x-role: approver`，缺原因 400、非审批员 403），应急放行不受安全库存限制。
+5. **并发申领**：所有库存写操作在进程内互斥锁中串行执行，"校验 + 扣减"原子完成——同一批次并发申领只能成功一单，失败方返回 `INSUFFICIENT_STOCK` 且库存不变。
+6. **库存页一致性**：每次写操作同步落盘 JSON（tmp + rename 原子替换），页面刷新 / 服务重启后三类数量与最近放行记录一致。
+
+### API 一览
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| GET | `/health` | 健康检查 |
+| GET | `/api/meta` | 仓库/物资/安置点/枚举文案 |
+| POST | `/api/batches` | 批次入库（warehouse_id, supply_item_id, batch_no, quantity, expire_at, quality_status, inbound_source） |
+| GET | `/api/inventory?warehouse_id=` | 库存视图：可用/临期/冻结/可调拨量 + 批次分区明细 |
+| GET | `/api/releases?warehouse_id=&limit=` | 最近放行记录（倒序） |
+| POST | `/api/dispatch/claim` | 普通调拨申领（安全库存约束，整单拒绝） |
+| POST | `/api/dispatch/emergency` | 应急调拨登记（不动库存） |
+| POST | `/api/dispatch/:id/release` | 应急放行（需 `x-role: approver` + `approve_reason`） |
+| GET | `/api/dispatch` | 调拨单列表 |
+
+### 后端目录（本切片）
+
+```text
+backend/src/
+├── config/         # 端口、数据文件、临期阈值（env 可覆盖）
+├── constants/      # QualityStatus / BatchBucket / DispatchStatus / DispatchPriority / 错误码 / 错误消息 / 日志模板
+├── constructors/   # 批次、调拨单、放行记录、审计日志构造器
+├── repositories/   # JSON 持久化仓储 + 种子数据
+├── services/       # InventoryService（分区/聚合）/ InboundService（入库）/ DispatchService（申领/放行闭环）
+├── controllers/    # 库存域、调拨域控制器
+├── middlewares/    # errorHandler / rbac / requestLogger
+├── routes/         # 路由表
+├── utils/          # 互斥锁、校验、HTTP 助手、ApiError
+└── server.js       # 装配：仓储 → 服务 → 路由 → HTTP + 静态库存页
+backend/test/       # 闭环测试（node --test）
+backend/public/       # 库存页（原生 HTML/JS，无需构建）
+```
+
+> 说明：`backend/src/main/java` 下的 Spring Boot 骨架与 `frontend/` 的 Vue 骨架为全量项目预留结构，本环境（无 JDK/Docker）中未改动；上述 Node 切片是独立可运行的完整闭环。
+
 ## 快速启动
 
 ```bash
